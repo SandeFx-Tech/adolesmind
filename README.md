@@ -1,6 +1,6 @@
 # adolesmind
 
-A new Flutter project.
+This app helps people with a poor mental health
 
 ## Getting Started
 
