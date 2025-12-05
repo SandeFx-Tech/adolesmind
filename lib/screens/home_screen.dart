@@ -11,19 +11,45 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final AudioPlayer _audioPlayer = AudioPlayer();
+
   bool _isPlaying = false;
-  Duration _duration = const Duration(minutes: 2, seconds: 29);
+  Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
+
+  final List<Map<String, String>> _tracks = [
+    {
+      'title': 'The Daily Deuce',
+      'url': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+    },
+    {
+      'title': 'Motivation Booster',
+      'url': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+    },
+    {
+      'title': 'Mindfulness Session',
+      'url': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+    },
+  ];
+
+  int _currentTrackIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _audioPlayer.onPositionChanged.listen((newPosition) {
-      setState(() => _position = newPosition);
+
+    _audioPlayer.onDurationChanged.listen((d) {
+      setState(() => _duration = d);
     });
-    _audioPlayer.onDurationChanged.listen((newDuration) {
-      setState(() => _duration = newDuration);
+
+    _audioPlayer.onPositionChanged.listen((p) {
+      setState(() => _position = p);
     });
+
+    _audioPlayer.onPlayerComplete.listen((_) {
+      setState(() => _isPlaying = false);
+    });
+
+    _audioPlayer.setReleaseMode(ReleaseMode.loop);
   }
 
   @override
@@ -35,234 +61,159 @@ class _HomeScreenState extends State<HomeScreen> {
   void _togglePlayPause() async {
     if (_isPlaying) {
       await _audioPlayer.pause();
+      setState(() => _isPlaying = false);
     } else {
-      // Use a sample audio URL; replace with your real one
-      await _audioPlayer.play(UrlSource('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'));
+      await _audioPlayer.play(
+        UrlSource(_tracks[_currentTrackIndex]['url']!),
+      );
+      setState(() => _isPlaying = true);
     }
-    setState(() => _isPlaying = !_isPlaying);
+  }
+
+  void _switchTrack(int index) async {
+    _currentTrackIndex = index;
+    _position = Duration.zero;
+    _duration = Duration.zero;
+
+    await _audioPlayer.stop();
+    await _audioPlayer.play(
+      UrlSource(_tracks[_currentTrackIndex]['url']!),
+    );
+
+    setState(() => _isPlaying = true);
   }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          const SizedBox(height: 40),
-          Text(
-            'Start your day off right\nwith a 2 minute dose of\nscience, wisdom, & humor.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              height: 1.2,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 40),
-          // Phone-like container
-          Container(
-            width: 320,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(40),
-              border: Border.all(color: Colors.white10, width: 8),
-            ),
+    final currentTrack = _tracks[_currentTrackIndex];
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F111D),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: SingleChildScrollView(
             child: Column(
               children: [
+                const SizedBox(height: 20),
                 Text(
-                  'MÉNTAL',
+                  'Adolesmind Audio Sessions',
                   style: GoogleFonts.orbitron(
-                    fontSize: 32,
                     color: const Color(0xFF39FF14),
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 3,
+                    letterSpacing: 2,
                   ),
                 ),
-                Text(
-                  'Training',
-                  style: GoogleFonts.inter(fontSize: 18, color: Colors.white),
-                ),
-                const SizedBox(height: 30),
-                // Daily Deuce Card
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1A1F2E),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.headphones, color: Colors.white),
-                          const SizedBox(width: 10),
-                          Text(
-                            'The Daily Deuce',
-                            style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600),
+
+                const SizedBox(height: 20),
+
+                SizedBox(
+                  height: 120,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _tracks.length,
+                    itemBuilder: (ctx, index) {
+                      final isSelected = index == _currentTrackIndex;
+
+                      return GestureDetector(
+                        onTap: () => _switchTrack(index),
+                        child: Container(
+                          width: 180,
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? const Color(0xFF39FF14)
+                                : const Color(0xFF1A1F2E),
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                          const Spacer(),
-                          const Icon(Icons.arrow_forward, color: Colors.white),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      // Host image with wave (use your own assets or network images)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(50),
-                        child: Stack(
-                          children: [
-                            Image.network(
-                              'https://randomuser.me/api/portraits/men/32.jpg', // Placeholder
-                              height: 100,
-                              width: 100,
-                              fit: BoxFit.cover,
-                            ),
-                            Positioned.fill(
-                              child: Container(
-                                color: Colors.cyan.withValues(alpha: 0.4), // Wave overlay simulation
+                          child: Center(
+                            child: Text(
+                              _tracks[index]['title']!,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.inter(
+                                color:
+                                    isSelected ? Colors.black : Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF39FF14),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'New Deuce every day',
-                          style: GoogleFonts.inter(color: Colors.black, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'SHOVE Yourself',
-                        style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '${_position.inMinutes}:${_position.inSeconds.remainder(60).toString().padLeft(2, '0')}',
-                            style: GoogleFonts.inter(color: Colors.white),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Slider(
-                              value: _position.inSeconds.toDouble(),
-                              max: _duration.inSeconds.toDouble(),
-                              onChanged: (value) async {
-                                await _audioPlayer.seek(Duration(seconds: value.toInt()));
-                              },
-                              activeColor: const Color(0xFF39FF14),
-                              inactiveColor: Colors.white24,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            '${_duration.inMinutes}:${_duration.inSeconds.remainder(60).toString().padLeft(2, '0')}',
-                            style: GoogleFonts.inter(color: Colors.white),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'The necessary balance of pushing\nyourself and loving yourself',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(color: Colors.white, height: 1.4),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _buildChip('Balance', true),
-                          const SizedBox(width: 12),
-                          _buildChip('Training', false),
-                        ],
-                      ),
-                      const SizedBox(height: 30),
-                      GestureDetector(
-                        onTap: _togglePlayPause,
-                        child: CircleAvatar(
-                          radius: 35,
-                          backgroundColor: const Color(0xFF39FF14),
-                          child: Icon(
-                            _isPlaying ? Icons.pause : Icons.play_arrow,
-                            size: 44,
-                            color: Colors.black,
                           ),
                         ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
                 ),
-                const SizedBox(height: 30),
-                // Locked Daily Do
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1A1F2E),
-                    borderRadius: BorderRadius.circular(20),
+
+                const SizedBox(height: 40),
+
+                Text(
+                  currentTrack['title']!,
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
                   ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.check_circle_outline, color: Colors.white),
-                          const SizedBox(width: 10),
-                          Text(
-                            'The Daily Do',
-                            style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600),
-                          ),
-                          const Spacer(),
-                          const Icon(Icons.lock, color: Colors.white),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white10,
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.play_arrow, color: Colors.white),
-                            const SizedBox(width: 12),
-                            Text('Listen to The Daily Deuce to unlock', style: GoogleFonts.inter()),
-                          ],
-                        ),
-                      ),
-                    ],
+                ),
+
+                const SizedBox(height: 20),
+
+                Slider(
+                  min: 0,
+                  max: _duration.inSeconds.toDouble() > 0
+                      ? _duration.inSeconds.toDouble()
+                      : 1,
+                  value: _position.inSeconds
+                      .toDouble()
+                      .clamp(0, _duration.inSeconds.toDouble()),
+                  onChanged: (value) async {
+                    await _audioPlayer
+                        .seek(Duration(seconds: value.toInt()));
+                  },
+                  activeColor: const Color(0xFF39FF14),
+                  inactiveColor: Colors.white24,
+                ),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _formatDuration(_position),
+                      style: GoogleFonts.inter(color: Colors.white),
+                    ),
+                    Text(
+                      _formatDuration(_duration),
+                      style: GoogleFonts.inter(color: Colors.white),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                CircleAvatar(
+                  radius: 35,
+                  backgroundColor: const Color(0xFF39FF14),
+                  child: IconButton(
+                    icon: Icon(
+                      _isPlaying ? Icons.pause : Icons.play_arrow,
+                      size: 36,
+                      color: Colors.black,
+                    ),
+                    onPressed: _togglePlayPause,
                   ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildChip(String label, bool selected) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-      decoration: BoxDecoration(
-        color: selected ? const Color(0xFF39FF14) : Colors.white10,
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.inter(
-          color: selected ? Colors.black : Colors.white,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
+  String _formatDuration(Duration d) {
+    final minutes = d.inMinutes.toString().padLeft(2, '0');
+    final seconds = (d.inSeconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
   }
 }

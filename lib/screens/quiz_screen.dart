@@ -24,6 +24,7 @@ class _QuizScreenState extends State<QuizScreen> {
   void _showResults() {
     int totalScore = _questions.fold(0, (sum, q) => sum + (q['a'] as int));
     String result;
+
     if (totalScore <= 4) {
       result = 'Minimal depression';
     } else if (totalScore <= 9) {
@@ -40,12 +41,17 @@ class _QuizScreenState extends State<QuizScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1A1F2E),
-        title: Text('Your Score', style: GoogleFonts.inter(color: const Color(0xFF39FF14))),
-        content: Text('Total: $totalScore\n$result', style: GoogleFonts.inter(fontSize: 18)),
+        title: Text('Your Score',
+            style: GoogleFonts.inter(color: const Color(0xFF39FF14))),
+        content: Text(
+          'Total score: $totalScore\n\n$result',
+          style: GoogleFonts.inter(fontSize: 18, color: Colors.white),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('OK', style: GoogleFonts.inter(color: const Color(0xFF39FF14))),
+            child: Text('OK',
+                style: GoogleFonts.inter(color: const Color(0xFF39FF14))),
           ),
         ],
       ),
@@ -62,35 +68,52 @@ class _QuizScreenState extends State<QuizScreen> {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 30),
             child: ElevatedButton(
-              onPressed: _showResults,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF39FF14),
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                foregroundColor: Colors.black,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 30, vertical: 16),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30)),
               ),
-              child: Text('See My Results', style: GoogleFonts.inter(color: Colors.black, fontWeight: FontWeight.bold)),
+              onPressed: _showResults,
+              child: Text('View Results',
+                  style: GoogleFonts.inter(
+                      fontWeight: FontWeight.bold, fontSize: 18)),
             ),
           );
         }
+
+        final question = _questions[index];
+
         return Card(
-          color: const Color(0xFF1A1F2E),
+          color: const Color.fromARGB(255, 98, 111, 151),
           margin: const EdgeInsets.only(bottom: 16),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_questions[index]['q'], style: GoogleFonts.inter(fontSize: 16)),
+                Text(question['q'],
+                    style: GoogleFonts.inter(
+                        fontSize: 18, fontWeight: FontWeight.w500)),
                 const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [0, 1, 2, 3].map((val) {
-                    return ChoiceChip(
-                      label: Text(['Not at all', 'Several days', 'More than half', 'Nearly every day'][val]),
-                      selected: _questions[index]['a'] == val,
-                      selectedColor: const Color(0xFF39FF14),
-                      onSelected: (_) => setState(() => _questions[index]['a'] = val),
-                    );
-                  }).toList(),
+                DropdownButton<int>(
+                  dropdownColor: const Color.fromARGB(255, 195, 203, 228),
+                  value: question['a'],
+                  items: const [
+                    DropdownMenuItem(value: 0, child: Text('Not at all')),
+                    DropdownMenuItem(value: 1, child: Text('Several days')),
+                    DropdownMenuItem(
+                        value: 2, child: Text('More than half the days')),
+                    DropdownMenuItem(
+                        value: 3, child: Text('Nearly every day')),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      question['a'] = value!;
+                    });
+                  },
                 ),
               ],
             ),
